@@ -25,18 +25,13 @@ jobs:
       - name: Deploy handoff-service agent to Foundry
         env:
           FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
-          GPT_DEPLOYMENT: ${{ secrets.GPT_DEPLOYMENT || secrets.gpt_deployment }}
+          GPT_DEPLOYMENT: ${{ secrets.GPT_DEPLOYMENT }}
         run: |
-          if [ -z "$FOUNDRY_ENDPOINT" ]; then
-            echo "::error::Missing secret FOUNDRY_ENDPOINT"
-            exit 1
-          fi
-          if [ -z "$GPT_DEPLOYMENT" ]; then
-            echo "::error::Missing model deployment secret. Set GPT_DEPLOYMENT or gpt_deployment"
-            exit 1
-          fi
-
-          INSTRUCTIONS=$(python3 -c "import json; print(json.dumps(open('src/prompts/HandoffAgentPrompt.txt', 'r').read()))")
+            INSTRUCTIONS=$(python3 -c "
+            import json, sys
+            with open('src/prompts/HandoffAgentPrompt.txt', 'r') as f:
+              print(json.dumps(f.read()))
+            ")
 
           jq --arg model "$GPT_DEPLOYMENT" \
              --argjson instructions "$INSTRUCTIONS" \
