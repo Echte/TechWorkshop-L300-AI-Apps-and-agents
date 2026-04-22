@@ -27,11 +27,11 @@ jobs:
           FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
           GPT_DEPLOYMENT: ${{ secrets.GPT_DEPLOYMENT }}
         run: |
-            INSTRUCTIONS=$(python3 -c "
-            import json, sys
-            with open('src/prompts/HandoffAgentPrompt.txt', 'r') as f:
+          INSTRUCTIONS=$(python3 -c "
+          import json, sys
+          with open('src/prompts/HandoffAgentPrompt.txt', 'r') as f:
               print(json.dumps(f.read()))
-            ")
+          ")
 
           jq --arg model "$GPT_DEPLOYMENT" \
              --argjson instructions "$INSTRUCTIONS" \
