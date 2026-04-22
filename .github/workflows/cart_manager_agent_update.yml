@@ -3,6 +3,15 @@ name: Deploy Cart Manager Agent
 on:
   push:
     branches:
+      - main
+    paths:
+      - 'src/prompts/CartManagerPrompt.txt'
+      - 'src/infra/agents/cart-manager.json'
+      - '.github/workflows/cart_manager_agent_update.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy-agent:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -18,16 +27,25 @@ on:
           FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
           GPT_DEPLOYMENT: ${{ secrets.GPT_DEPLOYMENT }}
         run: |
-          INSTRUCTIONS=$(python3 -c "
-          import json, sys
-          with open('src/prompts/CartManagerPrompt.txt', 'r') as f:
-            print(json.dumps(f.read()))
-          ")
+          set -euo pipefail
+
+          if [ -z "${FOUNDRY_ENDPOINT:-}" ]; then
+            echo "::error::Missing FOUNDRY_ENDPOINT secret."
+            exit 1
+          fi
+
+          if [ -z "${GPT_DEPLOYMENT:-}" ]; then
+            echo "::error::Missing GPT_DEPLOYMENT secret. Set it to your Foundry model deployment name."
+            exit 1
+          fi
 
           jq --arg model "$GPT_DEPLOYMENT" \
-             --argjson instructions "$INSTRUCTIONS" \
+             --rawfile instructions src/prompts/CartManagerPrompt.txt \
              '.definition.model = $model | .definition.instructions = $instructions' \
              src/infra/agents/cart-manager.json > /tmp/agent-payload.json
+
+          jq -e '.definition.model | type == "string" and length > 0' /tmp/agent-payload.json > /dev/null
+          jq -e '.definition.instructions | type == "string" and length > 0' /tmp/agent-payload.json > /dev/null
 
           az rest --method POST \
             --url "${FOUNDRY_ENDPOINT}/agents/cart-manager/versions?api-version=2025-11-15-preview" \
