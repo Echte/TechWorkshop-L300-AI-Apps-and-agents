@@ -25,8 +25,17 @@ jobs:
       - name: Deploy cart-manager agent to Foundry
         env:
           FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
-          GPT_DEPLOYMENT: ${{ secrets.GPT_DEPLOYMENT }}
+          GPT_DEPLOYMENT: ${{ secrets.GPT_DEPLOYMENT || secrets.gpt_deployment }}
         run: |
+          if [ -z "$FOUNDRY_ENDPOINT" ]; then
+            echo "::error::Missing secret FOUNDRY_ENDPOINT"
+            exit 1
+          fi
+          if [ -z "$GPT_DEPLOYMENT" ]; then
+            echo "::error::Missing model deployment secret. Set GPT_DEPLOYMENT or gpt_deployment"
+            exit 1
+          fi
+
           INSTRUCTIONS=$(python3 -c "import json; print(json.dumps(open('src/prompts/CartManagerPrompt.txt', 'r').read()))")
 
           jq --arg model "$GPT_DEPLOYMENT" \
